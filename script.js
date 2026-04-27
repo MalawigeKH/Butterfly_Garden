@@ -1,4 +1,4 @@
-// 📱 LANDSCAPE LOCK (OPTION 1)
+// 📱 LANDSCAPE LOCK 
 async function lockLandscape() {
   try {
     if (screen.orientation && screen.orientation.lock) {
