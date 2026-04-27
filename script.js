@@ -1,8 +1,20 @@
+// 📱 LANDSCAPE LOCK (OPTION 1)
+async function lockLandscape() {
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      await screen.orientation.lock("landscape");
+    }
+  } catch (e) {
+    console.log("Landscape lock not supported on this device");
+  }
+}
+
+// start lock after first interaction (required by browsers)
+document.addEventListener("click", lockLandscape, { once: true });
+document.addEventListener("touchstart", lockLandscape, { once: true });
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-
-// 🌿 RESPONSIVE SCALE (IMPORTANT FIX)
-const scale = Math.min(window.innerWidth, window.innerHeight) / 700;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -19,15 +31,6 @@ function startMusic() {
     musicStarted = true;
   }
 }
-
-// 🌿 RESIZE SUPPORT
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-
-window.addEventListener("resize", resize);
-resize();
 
 // 🌿 BACKGROUND
 function drawBackground() {
@@ -71,7 +74,7 @@ let flowerId = 0;
 let lastTapTime = 0;
 let lastTapFlower = null;
 
-// 🦋 RANDOM SPAWN
+// 🦋 SPAWN CONTROL
 function maybeSpawnButterfly(x, y) {
   if (Math.random() < 0.35) {
     const type = butterflyTypes[Math.floor(Math.random() * butterflyTypes.length)];
@@ -87,8 +90,7 @@ function maybeSpawnButterfly(x, y) {
 
       up: type.up,
       down: type.down,
-
-      size: type.size * scale,
+      size: type.size,
 
       mode: "free",
       targetFlowerId: null,
@@ -108,8 +110,8 @@ function createFlower(x, y) {
     y,
     type: Math.floor(Math.random() * 3),
 
-    size: 10 * scale,
-    maxSize: 140 * scale,
+    size: 10,
+    maxSize: 140,
     holdTime: 120,
     state: "growing"
   });
@@ -117,7 +119,7 @@ function createFlower(x, y) {
   maybeSpawnButterfly(x, y);
 }
 
-// 📱 INPUT (TOUCH + MOUSE)
+// 📱 INPUT (DOUBLE TAP LOGIC)
 canvas.addEventListener("click", handleInput);
 canvas.addEventListener("touchstart", handleInput);
 
@@ -143,25 +145,24 @@ function handleInput(e) {
     let dx = x - f.x;
     let dy = y - f.y;
 
-    let distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < f.size * 0.6) {
+    if (Math.sqrt(dx * dx + dy * dy) < f.size * 0.4) {
       clickedFlower = f;
       break;
     }
   }
 
   if (!clickedFlower) {
-    // 🌸 empty space → flower
+    // 🌸 single tap empty space → flower
     createFlower(x, y);
     lastTapTime = 0;
     lastTapFlower = null;
     return;
   }
 
-  // 🦋 DOUBLE TAP LOGIC
+  // 🦋 DOUBLE TAP CHECK (within 300ms)
   if (lastTapFlower === clickedFlower.id && now - lastTapTime < 300) {
 
+    // 🦋 DOUBLE TAP → butterflies go
     butterflies.forEach(b => {
       b.mode = "attracted";
       b.targetFlowerId = clickedFlower.id;
@@ -171,6 +172,7 @@ function handleInput(e) {
     lastTapFlower = null;
 
   } else {
+    // first tap on flower (do nothing yet)
     lastTapTime = now;
     lastTapFlower = clickedFlower.id;
   }
@@ -184,7 +186,7 @@ function update() {
 
     if (f.state === "growing") {
       if (f.size < f.maxSize) {
-        f.size += 0.6 * scale;
+        f.size += 0.6;
       } else {
         f.state = "holding";
       }
@@ -196,7 +198,7 @@ function update() {
     }
 
     else if (f.state === "shrinking") {
-      f.size -= 1.2 * scale;
+      f.size -= 1.2;
     }
   });
 
@@ -230,6 +232,11 @@ function update() {
 }
 
 // 🎨 DRAW
+function drawBackground() {
+  ctx.fillStyle = "#d8f5d0";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 function drawFlowers() {
   flowers.forEach(f => {
     const img = flowerImgs[f.type];
