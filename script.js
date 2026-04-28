@@ -26,11 +26,21 @@ const music = new Audio("music.mp3");
 music.loop = true;
 music.volume = 0.5;
 
+// 🔥 important mobile support
+music.setAttribute("playsinline", "");
+music.setAttribute("webkit-playsinline", "");
+
 let musicStarted = false;
 function startMusic() {
   if (!musicStarted) {
-    music.play().catch(() => {});
-    musicStarted = true;
+    music.currentTime = 0;
+    music.muted = false;
+
+    music.play().then(() => {
+      musicStarted = true;
+    }).catch((err) => {
+      console.log("Music blocked:", err);
+    });
   }
 }
 
