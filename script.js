@@ -1,17 +1,19 @@
-// 📱 LANDSCAPE LOCK 
-async function lockLandscape() {
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      await screen.orientation.lock("landscape");
-    }
-  } catch (e) {
-    console.log("Landscape lock not supported on this device");
+// 📱 FULLSCREEN MODE
+function enterFullscreen() {
+  const el = document.documentElement;
+
+  if (el.requestFullscreen) {
+    el.requestFullscreen();
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+  } else if (el.msRequestFullscreen) {
+    el.msRequestFullscreen();
   }
 }
 
-// start lock after first interaction (required by browsers)
-document.addEventListener("click", lockLandscape, { once: true });
-document.addEventListener("touchstart", lockLandscape, { once: true });
+// trigger fullscreen on first interaction
+document.addEventListener("click", enterFullscreen, { once: true });
+document.addEventListener("touchstart", enterFullscreen, { once: true });
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -119,7 +121,7 @@ function createFlower(x, y) {
   maybeSpawnButterfly(x, y);
 }
 
-// 📱 INPUT (DOUBLE TAP LOGIC)
+// 📱 INPUT
 canvas.addEventListener("click", handleInput);
 canvas.addEventListener("touchstart", handleInput);
 
@@ -138,7 +140,6 @@ function handleInput(e) {
 
   const now = Date.now();
 
-  // 🌸 check flower hit
   let clickedFlower = null;
 
   for (let f of flowers) {
@@ -152,17 +153,14 @@ function handleInput(e) {
   }
 
   if (!clickedFlower) {
-    // 🌸 single tap empty space → flower
     createFlower(x, y);
     lastTapTime = 0;
     lastTapFlower = null;
     return;
   }
 
-  // 🦋 DOUBLE TAP CHECK (within 300ms)
   if (lastTapFlower === clickedFlower.id && now - lastTapTime < 300) {
 
-    // 🦋 DOUBLE TAP → butterflies go
     butterflies.forEach(b => {
       b.mode = "attracted";
       b.targetFlowerId = clickedFlower.id;
@@ -172,7 +170,6 @@ function handleInput(e) {
     lastTapFlower = null;
 
   } else {
-    // first tap on flower (do nothing yet)
     lastTapTime = now;
     lastTapFlower = clickedFlower.id;
   }
@@ -181,7 +178,6 @@ function handleInput(e) {
 // 🔄 UPDATE
 function update() {
 
-  // 🌸 FLOWERS
   flowers.forEach(f => {
 
     if (f.state === "growing") {
@@ -204,7 +200,6 @@ function update() {
 
   flowers = flowers.filter(f => f.size > 5);
 
-  // 🦋 BUTTERFLIES
   butterflies.forEach(b => {
 
     b.timer++;
@@ -232,11 +227,6 @@ function update() {
 }
 
 // 🎨 DRAW
-function drawBackground() {
-  ctx.fillStyle = "#d8f5d0";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
 function drawFlowers() {
   flowers.forEach(f => {
     const img = flowerImgs[f.type];
