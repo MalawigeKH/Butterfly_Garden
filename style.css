@@ -1,8 +1,7 @@
-html, body {
+body {
   margin: 0;
-  padding: 0;
   overflow: hidden;
-  background: #d8f5d0;
+  background: linear-gradient(to top, #a8edea, #fed6e3);
 }
 
 canvas {
