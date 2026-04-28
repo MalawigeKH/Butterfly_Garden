@@ -1,48 +1,56 @@
-// 📱 FULLSCREEN MODE
-function enterFullscreen() {
-  const el = document.documentElement;
-
-  if (el.requestFullscreen) {
-    el.requestFullscreen();
-  } else if (el.webkitRequestFullscreen) {
-    el.webkitRequestFullscreen();
-  } else if (el.msRequestFullscreen) {
-    el.msRequestFullscreen();
-  }
-}
-
-// trigger fullscreen on first interaction
-document.addEventListener("click", enterFullscreen, { once: true });
-document.addEventListener("touchstart", enterFullscreen, { once: true });
-
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
+// 🌿 RESPONSIVE SCALE (IMPORTANT FIX)
+const scale = Math.min(window.innerWidth, window.innerHeight) / 700;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// 🎵 MUSIC
+// 🎵 MUSIC (FIXED FOR MOBILE + PC)
 const music = new Audio("music.mp3");
 music.loop = true;
 music.volume = 0.5;
 
-// 🔥 important mobile support
+// important for mobile browsers
 music.setAttribute("playsinline", "");
 music.setAttribute("webkit-playsinline", "");
 
 let musicStarted = false;
+
 function startMusic() {
   if (!musicStarted) {
     music.currentTime = 0;
-    music.muted = false;
 
-    music.play().then(() => {
-      musicStarted = true;
-    }).catch((err) => {
-      console.log("Music blocked:", err);
-    });
+    const playPromise = music.play();
+
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        musicStarted = true;
+      }).catch(() => {
+        musicStarted = false;
+      });
+    }
   }
 }
+
+// extra safety trigger (first user interaction)
+document.addEventListener("touchstart", () => {
+  startMusic();
+}, { once: true });
+
+document.addEventListener("click", () => {
+  startMusic();
+}, { once: true });
+
+// 🌿 RESIZE SUPPORT
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+window.addEventListener("resize", resize);
+resize();
 
 // 🌿 BACKGROUND
 function drawBackground() {
@@ -86,7 +94,7 @@ let flowerId = 0;
 let lastTapTime = 0;
 let lastTapFlower = null;
 
-// 🦋 SPAWN CONTROL
+// 🦋 RANDOM SPAWN
 function maybeSpawnButterfly(x, y) {
   if (Math.random() < 0.35) {
     const type = butterflyTypes[Math.floor(Math.random() * butterflyTypes.length)];
@@ -102,7 +110,8 @@ function maybeSpawnButterfly(x, y) {
 
       up: type.up,
       down: type.down,
-      size: type.size,
+
+      size: type.size * scale,
 
       mode: "free",
       targetFlowerId: null,
@@ -122,8 +131,8 @@ function createFlower(x, y) {
     y,
     type: Math.floor(Math.random() * 3),
 
-    size: 10,
-    maxSize: 140,
+    size: 10 * scale,
+    maxSize: 140 * scale,
     holdTime: 120,
     state: "growing"
   });
@@ -131,7 +140,7 @@ function createFlower(x, y) {
   maybeSpawnButterfly(x, y);
 }
 
-// 📱 INPUT
+// 📱 INPUT (TOUCH + MOUSE)
 canvas.addEventListener("click", handleInput);
 canvas.addEventListener("touchstart", handleInput);
 
@@ -150,25 +159,30 @@ function handleInput(e) {
 
   const now = Date.now();
 
+  // 🌸 check flower hit
   let clickedFlower = null;
 
   for (let f of flowers) {
     let dx = x - f.x;
     let dy = y - f.y;
 
-    if (Math.sqrt(dx * dx + dy * dy) < f.size * 0.4) {
+    let distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < f.size * 0.6) {
       clickedFlower = f;
       break;
     }
   }
 
   if (!clickedFlower) {
+    // 🌸 empty space → flower
     createFlower(x, y);
     lastTapTime = 0;
     lastTapFlower = null;
     return;
   }
 
+  // 🦋 DOUBLE TAP LOGIC
   if (lastTapFlower === clickedFlower.id && now - lastTapTime < 300) {
 
     butterflies.forEach(b => {
@@ -188,11 +202,12 @@ function handleInput(e) {
 // 🔄 UPDATE
 function update() {
 
+  // 🌸 FLOWERS
   flowers.forEach(f => {
 
     if (f.state === "growing") {
       if (f.size < f.maxSize) {
-        f.size += 0.6;
+        f.size += 0.6 * scale;
       } else {
         f.state = "holding";
       }
@@ -204,12 +219,13 @@ function update() {
     }
 
     else if (f.state === "shrinking") {
-      f.size -= 1.2;
+      f.size -= 1.2 * scale;
     }
   });
 
   flowers = flowers.filter(f => f.size > 5);
 
+  // 🦋 BUTTERFLIES
   butterflies.forEach(b => {
 
     b.timer++;
