@@ -1,13 +1,13 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// 🌿 RESPONSIVE SCALE (IMPORTANT FIX)
+// 🌿 RESPONSIVE SCALE 
 const scale = Math.min(window.innerWidth, window.innerHeight) / 700;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// 🎵 MUSIC (FIXED FOR MOBILE + PC)
+// 🎵 MUSIC 
 const music = new Audio("music.mp3");
 music.loop = true;
 music.volume = 0.5;
@@ -34,7 +34,7 @@ function startMusic() {
   }
 }
 
-// extra safety trigger (first user interaction)
+// extra safety trigger 
 document.addEventListener("touchstart", () => {
   startMusic();
 }, { once: true });
